@@ -4,8 +4,8 @@ from db.models import User
 def create_user(username: str,
                 password: str,
                 email: str = None,
-                first_name: str = None,
-                last_name: str = None) -> User:
+                first_name: str = "",
+                last_name: str = "") -> User:
     return User.objects.create_user(username=username,
                                     email=email,
                                     password=password,
@@ -21,8 +21,8 @@ def update_user(user_id: int,
                 username: str = None,
                 password: str = None,
                 email: str = None,
-                first_name: str = "",
-                last_name: str = "") -> User | None:
+                first_name: str = None,
+                last_name: str = None) -> User | None:
     user = User.objects.get(pk=user_id)
     if not user:
         return None
