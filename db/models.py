@@ -1,9 +1,9 @@
-from datetime import datetime
+from typing import Optional, Iterable
 
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import SET_NULL, UniqueConstraint
+from django.db.models import UniqueConstraint
 
 import settings
 
@@ -65,10 +65,11 @@ class MovieSession(models.Model):
 
 class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return f"Order: {self.created_at.strftime("%d/%m/%y %H:%M:%S")}"
+        return f"{self.created_at.strftime("%Y-%m-%d %H:%M:%S")}"
 
     class Meta:
         ordering = ["-created_at"]
@@ -77,35 +78,49 @@ class Order(models.Model):
 class User(AbstractUser):
     pass
 
-
 class Ticket(models.Model):
-    movie_session = models.ForeignKey(MovieSession, on_delete=models.SET_NULL, null=True, blank=True)
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
-    row = models.IntegerField
-    seat = models.IntegerField
+    movie_session = models.ForeignKey(MovieSession,
+                                      on_delete=models.SET_NULL,
+                                      null=True,
+                                      blank=True)
+    order = models.ForeignKey(Order,
+                              on_delete=models.SET_NULL,
+                              null=True,
+                              blank=True)
+    row = models.IntegerField(null=True, blank=True)
+    seat = models.IntegerField(null=True, blank=True)
 
     class Meta:
         constraints = [
-            UniqueConstraint(fields=["row", "seat", "movie_session"])
+            UniqueConstraint(fields=["row", "seat", "movie_session"],
+                             name="row_seat_movie_session_constraint")
         ]
 
-
     def __str__(self) -> str:
-        return f"Ticket: {self.movie_session} (row: {self.row}, seat: {self.seat})"
+        return (f"{self.movie_session} "
+                f"(row: {self.row}, seat: {self.seat})")
 
     def clean(self) -> None:
-        if not (1<= self.row <= self.movie_session.cinema_hall.rows):
-            raise ValidationError({"row":f"Seat: {self.row} does not exist"})
+        if not (1 <= self.row <= self.movie_session.cinema_hall.rows):
+            raise ValidationError(
+                {
+                    "row":
+                        [f"row number must be in available range: (1, rows): "
+                        f"(1, {self.movie_session.cinema_hall.rows})"]
+                })
 
-        if not (1<= self.seat <= self.movie_session.cinema_hall.seats_in_row):
-            raise ValidationError({"seat":f"Seat: {self.seat} does not exist"})
+        if not (1 <= self.seat <= self.movie_session.cinema_hall.seats_in_row):
+            raise ValidationError(
+                {
+                    "seat":
+                        [f"seat number must be in available range: (1, seats_in_row): "
+                        f"(1, {self.movie_session.cinema_hall.seats_in_row})"]
+                })
 
-    def save(
-        self,
-        force_insert = False,
-        force_update = False,
-        using = None,
-        update_fields = None,
-    ) -> None:
+    def save(self,
+             force_insert: bool = False,
+             force_update: bool = False,
+             using: Optional[str] = None,
+             update_fields: Optional[Iterable[str]] = None) -> None:
         self.full_clean()
         super().save()
