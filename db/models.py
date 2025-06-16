@@ -78,6 +78,7 @@ class Order(models.Model):
 class User(AbstractUser):
     pass
 
+
 class Ticket(models.Model):
     movie_session = models.ForeignKey(MovieSession,
                                       on_delete=models.SET_NULL,
@@ -106,15 +107,16 @@ class Ticket(models.Model):
                 {
                     "row":
                         [f"row number must be in available range: (1, rows): "
-                        f"(1, {self.movie_session.cinema_hall.rows})"]
+                         f"(1, {self.movie_session.cinema_hall.rows})"]
                 })
 
         if not (1 <= self.seat <= self.movie_session.cinema_hall.seats_in_row):
             raise ValidationError(
                 {
                     "seat":
-                        [f"seat number must be in available range: (1, seats_in_row): "
-                        f"(1, {self.movie_session.cinema_hall.seats_in_row})"]
+                        [f"seat number must be in available range: "
+                         f"(1, seats_in_row): "
+                         f"(1, {self.movie_session.cinema_hall.seats_in_row})"]
                 })
 
     def save(self,
